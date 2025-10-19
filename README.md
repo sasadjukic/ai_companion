@@ -60,7 +60,7 @@ Follow these instructions to set up and run Aura on your local machine.
 Once the setup is complete, you can start the chat interface with the following command:
 
 ```bash
-python main.py
+streamlit run app.py
 ```
 
 You can now chat with Aura in your terminal. To end the session, type `exit`.
