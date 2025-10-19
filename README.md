@@ -85,7 +85,7 @@ Aura is built on a RAG (Retrieval-Augmented Generation) architecture, which invo
 ```
 .
 ├── .env                # Stores environment variables like API keys
-├── main.py             # The main application script
+├── app.py             # The main application script
 ├── README.md           # Project documentation
 ├── requirements.txt    # Python package dependencies
 └── user_data.txt       # User-specific context for the AI
