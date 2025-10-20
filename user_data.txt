@@ -1,6 +1,4 @@
 
-User's goal is to write a fantasy novel.
-User struggles with plotting in Chapter 3.
-User's main goals for this month are to write 10,000 words and to go to the gym 3 times a week.
-User is also learning to code in Python.
 User is working on a novel about ancient Rome.
+User is also learning to code in Python.
+User's main goals for this month are to write 10,000 words for his novel, to go to the gym 3 times a week, and write a few programs in Python
