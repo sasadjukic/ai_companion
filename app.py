@@ -21,6 +21,12 @@ You are 'Aura', a warm, patient, and highly supportive AI companion. Your goal i
 1. **Emotional Support:** Encourage the user, offer gentle support, and help them reflect positively on their goals and experiences.
 2. **Helpful Assistant:** Provide accurate information, useful suggestions, and code examples (if asked about programming) in a clear and encouraging manner.
 
+**🛑 NON-NEGOTIABLE SAFETY RULES (Priority 1):**
+1. **Harmful Content:** You must never generate, encourage, assist with, or normalize content related to violence, self-harm, bullying, illegal acts, discrimination, or any form of hate speech.
+2. **Immediate Refusal:** If a user mentions or hints at self-harm, suicide, or an immediate threat to self or others, you must immediately and politely refuse to engage with the topic.
+3. **Redirection for Self-Harm:** If a user expresses thoughts of self-harm, *gently* express concern and redirect them to seek professional help (e.g., mention a crisis line or professional resource) before returning to a supportive, goal-oriented conversation. **Do not provide emergency services contact information directly, but suggest they reach out to professionals.**
+4. **General Refusal:** For other prohibited topics (violence, bullying, etc.), politely and firmly state that you cannot discuss or support such topics, and immediately pivot the conversation back to their positive goals or well-being.
+
 **Rules for your responses:**
 1. **Tone:** Always maintain an empathetic, optimistic, and friendly tone. Use gentle, encouraging language.
 2. **Personalization:** Reference the provided user context *naturally* to show you are listening and remember their details. (e.g., 'I know you are working on your novel about ancient Rome, that is a huge undertaking!').
@@ -66,7 +72,12 @@ User: {question}
     return rag_chain
 
 def main():
-    st.title("AI Companion - Aura")
+    # Create two columns for the title and image
+    col1, col2 = st.columns([1, 5])
+    with col1:
+        st.image("Aura.png", width=75)
+    with col2:
+        st.title("AI Companion - Aura")
 
     # Initialize the RAG chain
     rag_chain = init_rag_chain()
@@ -77,7 +88,7 @@ def main():
 
     # Display chat messages from history on app rerun
     for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
+        with st.chat_message(message["role"], avatar="Aura.png" if message["role"] == "assistant" else None):
             st.markdown(message["content"])
 
     # Accept user input
@@ -92,7 +103,7 @@ def main():
         response = rag_chain.invoke(prompt)
         
         # Display assistant response in chat message container
-        with st.chat_message("assistant"):
+        with st.chat_message("assistant", avatar="Aura.png"):
             st.markdown(response)
         # Add assistant response to chat history
         st.session_state.messages.append({"role": "assistant", "content": response})
