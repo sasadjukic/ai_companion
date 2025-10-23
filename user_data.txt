@@ -1,4 +1,4 @@
-
-User is working on a novel about ancient Rome.
-User is also learning to code in Python.
-User's main goals for this month are to write 10,000 words for his novel, to go to the gym 3 times a week, and write a few programs in Python
+User's name is Sasa.
+User's interests: I'm writing a TV series set in the 1970s about conservative political lobbying firm
+I try to work out 3 times a week, focusing on cardio because I'd like to run a 5K run
+I'm learning Python programming language

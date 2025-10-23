@@ -71,6 +71,20 @@ User: {question}
     )
     return rag_chain
 
+def user_info_form():
+    st.header("Tell us about yourself")
+    with st.form("user_info_form"):
+        name = st.text_input("First Name")
+        interests = st.text_area("Your interests and goals")
+        submitted = st.form_submit_button("Submit")
+        if submitted and name and interests:
+            with open("user_data.txt", "w") as f:
+                f.write(f"User's name is {name}.\n")
+                f.write(f"User's interests: {interests}\n")
+            st.session_state.user_info_submitted = True
+            st.session_state.user_name = name
+            st.rerun()
+
 def main():
     # Create two columns for the title and image
     col1, col2 = st.columns([1, 5])
@@ -79,34 +93,45 @@ def main():
     with col2:
         st.title("AI Companion - Aura")
 
-    # Initialize the RAG chain
-    rag_chain = init_rag_chain()
+    if "user_info_submitted" not in st.session_state:
+        st.session_state.user_info_submitted = False
 
-    # Initialize chat history
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    if not st.session_state.user_info_submitted:
+        user_info_form()
+    else:
+        # Initialize the RAG chain
+        rag_chain = init_rag_chain()
 
-    # Display chat messages from history on app rerun
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"], avatar="Aura.png" if message["role"] == "assistant" else None):
-            st.markdown(message["content"])
+        # Initialize chat history
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
 
-    # Accept user input
-    if prompt := st.chat_input("What is on your mind?"):
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        # Display user message in chat message container
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        # Greet the user by name
+        if not st.session_state.messages:
+            greeting = f"Hello {st.session_state.user_name}! It's great to meet you. What's on your mind today?"
+            st.session_state.messages.append({"role": "assistant", "content": greeting})
 
-        # Get AI response
-        response = rag_chain.invoke(prompt)
-        
-        # Display assistant response in chat message container
-        with st.chat_message("assistant", avatar="Aura.png"):
-            st.markdown(response)
-        # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        # Display chat messages from history on app rerun
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"], avatar="Aura.png" if message["role"] == "assistant" else None):
+                st.markdown(message["content"])
+
+        # Accept user input
+        if prompt := st.chat_input("What is on your mind?"):
+            # Add user message to chat history
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            # Display user message in chat message container
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # Get AI response
+            response = rag_chain.invoke(prompt)
+            
+            # Display assistant response in chat message container
+            with st.chat_message("assistant", avatar="Aura.png"):
+                st.markdown(response)
+            # Add assistant response to chat history
+            st.session_state.messages.append({"role": "assistant", "content": response})
 
 if __name__ == '__main__':
     main()

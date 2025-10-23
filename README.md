@@ -51,19 +51,15 @@ Follow these instructions to set up and run Aura on your local machine.
       GOOGLE_API_KEY="YOUR_GOOGLE_API_KEY_HERE"
       ```
 
-4.  **Add your personal context:**
-    - Open the `user_data.txt` file.
-    - Add sentences that describe your goals, interests, or any other context you want Aura to be aware of. Each piece of information should ideally be on a new line.
-
 ### Running the Application
 
-Once the setup is complete, you can start the chat interface with the following command:
+Once the setup is complete, you can start the application with the following command:
 
 ```bash
 streamlit run app.py
 ```
 
-You can now chat with Aura in your terminal. To end the session, type `exit`.
+A web browser window will open. You will be prompted to fill out a form with your first name and interests. After you submit the form, the chat with Aura will begin.
 
 ---
 
@@ -71,7 +67,7 @@ You can now chat with Aura in your terminal. To end the session, type `exit`.
 
 Aura is built on a RAG (Retrieval-Augmented Generation) architecture, which involves the following steps:
 
-1.  **Data Ingestion:** The text from `user_data.txt` is loaded and split into chunks.
+1.  **Data Ingestion:** When you start the application, you will fill out a form with your name and interests. This information is saved to `user_data.txt`, which is then loaded and split into chunks.
 2.  **Embedding:** Each chunk of text is converted into a numerical vector using the `all-mpnet-base-v2` embedding model. These vectors capture the semantic meaning of the text.
 3.  **Vector Storage:** The embeddings and their corresponding text chunks are stored in a ChromaDB vector database.
 4.  **Retrieval:** When you send a message, your input is converted into a query vector. The system performs a similarity search in the vector database to find the most relevant text chunks from your user data.
