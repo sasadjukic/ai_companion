@@ -9,6 +9,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.document_loaders import TextLoader
+from database import init_db, save_conversation, get_conversations, get_conversation
 
 # Function to initialize the RAG chain
 @st.cache_resource
@@ -86,6 +87,8 @@ def user_info_form():
             st.rerun()
 
 def main():
+    init_db()
+
     # Create two columns for the title and image
     col1, col2 = st.columns([1, 5])
     with col1:
@@ -99,17 +102,32 @@ def main():
     if not st.session_state.user_info_submitted:
         user_info_form()
     else:
+        st.sidebar.title("History")
+        if st.sidebar.button("New Chat"):
+            st.session_state.messages = []
+            st.session_state.conversation_id = None
+            st.rerun()
+
+        conversations = get_conversations(st.session_state.user_name)
+        for conv in conversations:
+            if st.sidebar.button(f"Chat from {conv[1]}"):
+                st.session_state.messages = get_conversation(conv[0])
+                st.session_state.conversation_id = conv[0]
+                st.rerun()
+
         # Initialize the RAG chain
         rag_chain = init_rag_chain()
 
         # Initialize chat history
         if "messages" not in st.session_state:
             st.session_state.messages = []
+            st.session_state.conversation_id = None
 
         # Greet the user by name
         if not st.session_state.messages:
             greeting = f"Hello {st.session_state.user_name}! It's great to meet you. What's on your mind today?"
             st.session_state.messages.append({"role": "assistant", "content": greeting})
+            st.session_state.conversation_id = save_conversation(st.session_state.user_name, st.session_state.messages)
 
         # Display chat messages from history on app rerun
         for message in st.session_state.messages:
@@ -132,6 +150,9 @@ def main():
                 st.markdown(response)
             # Add assistant response to chat history
             st.session_state.messages.append({"role": "assistant", "content": response})
+            
+            # Save the updated conversation
+            save_conversation(st.session_state.user_name, st.session_state.messages, st.session_state.conversation_id)
 
 if __name__ == '__main__':
     main()
