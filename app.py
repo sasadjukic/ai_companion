@@ -2,6 +2,7 @@
 import os
 import streamlit as st
 from dotenv import load_dotenv
+from operator import itemgetter
 from langchain_google_genai import GoogleGenerativeAI
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -58,6 +59,8 @@ You are 'Aura', a warm, patient, and highly supportive AI companion. Your goal i
     prompt_template = PromptTemplate.from_template(
         system_prompt + '''
 
+History: {history}
+
 Context: {context}
 
 User: {question}
@@ -65,12 +68,26 @@ User: {question}
     )
 
     rag_chain = (
-        {'context': retriever, 'question': RunnablePassthrough()}
+        {
+            "context": itemgetter("question") | retriever,
+            "question": itemgetter("question"),
+            "history": itemgetter("history"),
+        }
         | prompt_template
         | llm
         | StrOutputParser()
     )
     return rag_chain
+
+def format_chat_history(chat_history):
+    """Formats chat history into a string."""
+    buffer = ""
+    for message in chat_history:
+        if message["role"] == "user":
+            buffer += "Human: " + message["content"] + "\n"
+        elif message["role"] == "assistant":
+            buffer += "AI: " + message["content"] + "\n"
+    return buffer
 
 def user_info_form():
     st.header("Tell us about yourself")
@@ -143,7 +160,8 @@ def main():
                 st.markdown(prompt)
 
             # Get AI response
-            response = rag_chain.invoke(prompt)
+            chat_history_str = format_chat_history(st.session_state.messages)
+            response = rag_chain.invoke({"question": prompt, "history": chat_history_str})
             
             # Display assistant response in chat message container
             with st.chat_message("assistant", avatar="Aura.png"):
