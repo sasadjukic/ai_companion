@@ -9,12 +9,17 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.documents import Document
 from langchain_community.document_loaders import TextLoader
-from database import init_db, save_conversation, get_conversations, get_conversation
+import bcrypt
+from database import (
+    init_db, save_conversation, get_conversations,
+    get_conversation, create_user, get_user_by_email
+)
 
 # Function to initialize the RAG chain
 @st.cache_resource
-def init_rag_chain():
+def init_rag_chain(user_interests):
     load_dotenv()
 
     # Define the AI's Personality (The System Prompt)
@@ -45,8 +50,9 @@ You are 'Aura', a warm, patient, and highly supportive AI companion. Your goal i
     )
 
     # Implement User Data Ingestion (Vectorization)
-    loader = TextLoader('user_data.txt')
-    documents = loader.load()
+    # loader = TextLoader('user_data.txt') # No longer needed
+    # documents = loader.load() # No longer needed
+    documents = [Document(page_content=user_interests, metadata={"source": "user_profile"})]
 
     # Create embeddings
     embeddings = HuggingFaceEmbeddings(model_name='all-mpnet-base-v2')
@@ -89,19 +95,50 @@ def format_chat_history(chat_history):
             buffer += "AI: " + message["content"] + "\n"
     return buffer
 
-def user_info_form():
-    st.header("Tell us about yourself")
-    with st.form("user_info_form"):
-        name = st.text_input("First Name")
-        interests = st.text_area("Your interests and goals")
-        submitted = st.form_submit_button("Submit")
-        if submitted and name and interests:
-            with open("user_data.txt", "w") as f:
-                f.write(f"User's name is {name}.\n")
-                f.write(f"User's interests: {interests}\n")
-            st.session_state.user_info_submitted = True
-            st.session_state.user_name = name
-            st.rerun()
+def login_signup_page():
+    st.header("Welcome to Aura")
+    
+    choice = st.radio("Choose an option", ('Sign In', 'Sign Up'))
+
+    if choice == 'Sign In':
+        st.subheader("Sign In")
+        with st.form("login_form"):
+            email = st.text_input("Email")
+            password = st.text_input("Password", type="password")
+            submitted = st.form_submit_button("Sign In")
+            if submitted:
+                user = get_user_by_email(email)
+                if user and bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
+                    st.session_state.logged_in = True
+                    st.session_state.user_id = user[0]
+                    st.session_state.user_name = user[1]
+                    st.session_state.user_interests = user[4] # Store interests in session state
+                    st.rerun()
+                else:
+                    st.error("Invalid email or password")
+
+    elif choice == 'Sign Up':
+        st.subheader("Sign Up")
+        with st.form("signup_form"):
+            name = st.text_input("First Name")
+            email = st.text_input("Email")
+            password = st.text_input("Password", type="password")
+            interests = st.text_area("Your interests and goals")
+            submitted = st.form_submit_button("Sign Up")
+            if submitted:
+                if name and email and password and interests:
+                    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                    user_id = create_user(name, email, hashed_password, interests)
+                    if user_id:
+                        st.session_state.logged_in = True
+                        st.session_state.user_id = user_id
+                        st.session_state.user_name = name
+                        st.session_state.user_interests = interests # Store interests in session state
+                        st.rerun()
+                    else:
+                        st.error("Email already exists.")
+                else:
+                    st.error("Please fill out all fields.")
 
 def main():
     init_db()
@@ -113,11 +150,11 @@ def main():
     with col2:
         st.title("AI Companion - Aura")
 
-    if "user_info_submitted" not in st.session_state:
-        st.session_state.user_info_submitted = False
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
 
-    if not st.session_state.user_info_submitted:
-        user_info_form()
+    if not st.session_state.logged_in:
+        login_signup_page()
     else:
         st.sidebar.title("History")
         if st.sidebar.button("New Chat"):
@@ -125,15 +162,25 @@ def main():
             st.session_state.conversation_id = None
             st.rerun()
 
-        conversations = get_conversations(st.session_state.user_name)
+        conversations = get_conversations(st.session_state.user_id)
         for conv in conversations:
             if st.sidebar.button(f"Chat from {conv[1]}"):
                 st.session_state.messages = get_conversation(conv[0])
                 st.session_state.conversation_id = conv[0]
                 st.rerun()
 
-        # Initialize the RAG chain
-        rag_chain = init_rag_chain()
+        # Add a sign out button to the sidebar
+        if st.sidebar.button("Sign Out"):
+            st.session_state.logged_in = False
+            st.session_state.user_id = None
+            st.session_state.user_name = None
+            st.session_state.user_interests = None
+            st.session_state.messages = []
+            st.session_state.conversation_id = None
+            st.rerun()
+
+        # Initialize the RAG chain with user interests
+        rag_chain = init_rag_chain(st.session_state.user_interests)
 
         # Initialize chat history
         if "messages" not in st.session_state:
@@ -142,9 +189,9 @@ def main():
 
         # Greet the user by name
         if not st.session_state.messages:
-            greeting = f"Hello {st.session_state.user_name}! It's great to meet you. What's on your mind today?"
+            greeting = f"Hello {st.session_state.user_name}! It's great to see you again. What's on your mind today?"
             st.session_state.messages.append({"role": "assistant", "content": greeting})
-            st.session_state.conversation_id = save_conversation(st.session_state.user_name, st.session_state.messages)
+            st.session_state.conversation_id = save_conversation(st.session_state.user_id, st.session_state.messages)
 
         # Display chat messages from history on app rerun
         for message in st.session_state.messages:
@@ -170,7 +217,7 @@ def main():
             st.session_state.messages.append({"role": "assistant", "content": response})
             
             # Save the updated conversation
-            save_conversation(st.session_state.user_name, st.session_state.messages, st.session_state.conversation_id)
+            save_conversation(st.session_state.user_id, st.session_state.messages, st.session_state.conversation_id)
 
 if __name__ == '__main__':
     main()
