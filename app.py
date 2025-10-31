@@ -1,6 +1,7 @@
 
 import os
 import streamlit as st
+import random
 from dotenv import load_dotenv
 from operator import itemgetter
 from langchain_google_genai import GoogleGenerativeAI
@@ -145,8 +146,10 @@ def main():
 
     # Create two columns for the title and image
     col1, col2 = st.columns([1, 5])
+    image_choices = random.choice(['Aura.png', 'Aura_Pigtails.png', 'Aura_Curly_Pixie.png'])
+    chat_image = f"./Aura_Looks/{image_choices}"
     with col1:
-        st.image("Aura.png", width=75)
+        st.image(chat_image, width=75)
     with col2:
         st.title("AI Companion - Aura")
 
@@ -195,7 +198,7 @@ def main():
 
         # Display chat messages from history on app rerun
         for message in st.session_state.messages:
-            with st.chat_message(message["role"], avatar="Aura.png" if message["role"] == "assistant" else None):
+            with st.chat_message(message["role"], avatar=chat_image if message["role"] == "assistant" else None):
                 st.markdown(message["content"])
 
         # Accept user input
@@ -211,7 +214,7 @@ def main():
             response = rag_chain.invoke({"question": prompt, "history": chat_history_str})
             
             # Display assistant response in chat message container
-            with st.chat_message("assistant", avatar="Aura.png"):
+            with st.chat_message("assistant", avatar=chat_image):
                 st.markdown(response)
             # Add assistant response to chat history
             st.session_state.messages.append({"role": "assistant", "content": response})
